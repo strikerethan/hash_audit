@@ -12,10 +12,12 @@ done
 #Authenticate to obtain access_token
 token=$(curl -X POST "https://api.crowdstrike.com/oauth2/token" -H "accept: application/json" -H "Content-Type: application/x-www-form-urlencoded" -d "client_id=$user&client_secret=$pass" | grep -i access_token | awk {'print $2'} | sed 's/["{,]//g')
 
+#Call the MalQuery API filtering out any hashes that don't return with a label of malware
 audit=$(for i in `cat $file`; do curl -s -X GET "https://api.crowdstrike.com/malquery/entities/metadata/v1?ids=${i}" -H 'Authorization: Bearer '${token}'' -H 'Accept: application/json' |grep -B 2 -i label | awk '!/filesize/'| sed 's/.*://' | sed 's/[,"]//g'; done)
 
+#Filter MalQuery API results so that only the hashes remain
 malware=$(echo "$audit" | grep -B1 -i malware | sed 's/malware//' | sed 's/--//')
-
 malware_list=$(for m in $malware; do echo $m is Malware; done)
 
+#Display the hashes that returned as malware
 echo "$malware_list"
